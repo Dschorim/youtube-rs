@@ -1,14 +1,12 @@
 use urlencoding::encode;
 use serde_json::Value;
+use serde_json::json;
 
 fn main() {
     let youtube_base_url: String = "https://youtube.com".to_owned();
     let search_url: &str = "/results?search_query=";
     let search_query: &str = "TFT Set 9";
     let full_url: String = youtube_base_url + search_url + &encode(search_query);
-
-
-    // println!("{full_url}");
     
     let res = do_throttled_request(&full_url).expect("failure");
     let content;
@@ -16,7 +14,7 @@ fn main() {
         Some(x) => content = x,
         None => content = "nada",
     }
-    // println!("{content}");
+
     let mut content_vec: Vec<char> = Vec::new();
     let mut count_open_curly_brackets = 0;
     for c in content.chars(){
@@ -37,8 +35,24 @@ fn main() {
         Ok(x) => content = x,
         Err(_) => todo!()
     }
-    println!("{}", content["contents"][1]);
 
+    let serde_json::Value::Array(ref con) = content["contents"] else { todo!() };
+    for c in con {
+        if c["videoRenderer"] == json!(null) {
+            continue;
+        }
+        println!("{}", c["videoRenderer"]["title"]["runs"][0]["text"]);
+        println!("{}", c["videoRenderer"]["videoId"]);
+    }
+
+    let video_id = &content["contents"][0]["videoRenderer"]["videoId"];
+    let video_length = &content["contents"][0]["videoRenderer"]["lengthText"]["simpleText"];
+    let video_channel_url = &content["contents"][0]["videoRenderer"]["longBylineText"]["runs"][0]["navigationEndpoint"]["browseEndpoint"]["canonicalBaseUrl"];
+    let video_channel_name = &content["contents"][0]["videoRenderer"]["longBylineText"]["runs"][0]["text"];
+    let video_age = &content["contents"][0]["videoRenderer"]["publishedTimeText"]["simpleText"];
+    let video_viewcount = &content["contents"][0]["videoRenderer"]["shortViewCountText"]["simpleText"];
+    let video_thumbnail = &content["contents"][0]["videoRenderer"]["thumbnail"]["thumbnails"][0]["url"];
+    let video_title = &content["contents"][0]["videoRenderer"]["title"]["runs"][0]["text"];
 }
 
 
